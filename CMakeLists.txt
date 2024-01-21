@@ -16,7 +16,7 @@ ament_target_dependencies(${PROJECT_NAME} OpenCV)
 
 rclcpp_components_register_node(
   ${PROJECT_NAME}
-  PLUGIN "${PROJECT_NAME}::BBox2DTo3DNode)"
+  PLUGIN "${PROJECT_NAME}::BBox2DTo3DNode"
   EXECUTABLE ${PROJECT_NAME}_exec)
 
 if(BUILD_TESTING)

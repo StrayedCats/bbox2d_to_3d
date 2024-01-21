@@ -25,7 +25,8 @@
 #include <vision_msgs/msg/detection2_d_array.hpp>
 #include <vision_msgs/msg/bounding_box2_d.hpp>
 #include <vision_msgs/msg/bounding_box3_d.hpp>
-#include <vision_msgs/msg/bounding_box3_d_array.hpp>
+#include <vision_msgs/msg/detection3_d.hpp>
+#include <vision_msgs/msg/detection3_d_array.hpp>
 
 #include <opencv2/opencv.hpp>
 
@@ -46,11 +47,17 @@ namespace bbox2d_to_3d_node
         message_filters::Subscriber<Image> depth_sub_;
         message_filters::Subscriber<Detection2DArray> bbox2d_sub_;
 
-        rclcpp::Publisher<vision_msgs::msg::BoundingBox3DArray>::SharedPtr bbox3d_pub_;
+        rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr camera_info_sub_;
+        rclcpp::Publisher<vision_msgs::msg::Detection3DArray>::SharedPtr bbox3d_pub_;
 
         cv::Mat1f depth_;
 
-        void callback(const sensor_msgs::msg::Image::ConstSharedPtr &depth_msg,
-                      const vision_msgs::msg::Detection2DArray::ConstSharedPtr &bbox2d_msg);
+        float fx_;
+        float fy_;
+        float cx_;
+        float cy_;
+
+        void callback(const Image::ConstSharedPtr &, const Detection2DArray::ConstSharedPtr &);
+        void cameraInfoCallback(const sensor_msgs::msg::CameraInfo::ConstSharedPtr &);
     };
 }
