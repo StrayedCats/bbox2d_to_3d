@@ -59,8 +59,14 @@ namespace bbox2d_to_3d_node
         float cx_;
         float cy_;
 
+        float min_depth_;
+        float max_depth_;
+        bool imshow_isshow_;
+
         void callback(const Image::ConstSharedPtr &, const Detection2DArray::ConstSharedPtr &);
         void cameraInfoCallback(const sensor_msgs::msg::CameraInfo::ConstSharedPtr &);
         void colorCallback(const Image::ConstSharedPtr &);
+
+        cv::Vec3b depth2hue(float);
     };
 }
