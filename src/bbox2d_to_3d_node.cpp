@@ -23,6 +23,20 @@ BBox2DTo3DNode::BBox2DTo3DNode(const rclcpp::NodeOptions & options)
     this->camera_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
         "camera_info", 1, std::bind(&BBox2DTo3DNode::cameraInfoCallback, this, std::placeholders::_1));
 
+    this->color_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
+        "color", 1, [this](const sensor_msgs::msg::Image::ConstSharedPtr & color_msg) {
+            try
+            {
+                this->color_ = cv_bridge::toCvCopy(color_msg, color_msg->encoding)->image;
+                cv::cvtColor(this->color_, this->color_, cv::COLOR_BGR2RGB);
+            }
+            catch (cv_bridge::Exception & e)
+            {
+                RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
+                return;
+            }
+        });
+
     this->depth_sub_.subscribe(this, "depth", rmw_qos_profile_sensor_data);
     this->bbox2d_sub_.subscribe(this, "bbox2d", rmw_qos_profile_sensor_data);
     this->sync_.connectInput(this->depth_sub_, this->bbox2d_sub_);
@@ -44,6 +58,8 @@ void BBox2DTo3DNode::callback(const sensor_msgs::msg::Image::ConstSharedPtr & de
         return;
     }
 
+    cv::Mat3b color = this->color_.clone();
+
     vision_msgs::msg::Detection3DArray bbox3d_msg;
     bbox3d_msg.header = depth_msg->header;
     for (auto bbox2d : bbox2d_msg->detections)
@@ -55,7 +71,6 @@ void BBox2DTo3DNode::callback(const sensor_msgs::msg::Image::ConstSharedPtr & de
             RCLCPP_WARN(this->get_logger(), "depth is nan");
             continue;
         }
-        RCLCPP_INFO(this->get_logger(), "depth: %d", depth_mm);
 
         vision_msgs::msg::Detection3D bbox3d;
         bbox3d.header = depth_msg->header;
@@ -63,10 +78,8 @@ void BBox2DTo3DNode::callback(const sensor_msgs::msg::Image::ConstSharedPtr & de
 
         float position_x = bbox2d.bbox.center.position.x;
         float position_y = bbox2d.bbox.center.position.y;
-        float bbox_size_x = bbox2d.bbox.center.position.x;
-        float bbox_size_y = bbox2d.bbox.center.position.y;
-        RCLCPP_INFO(this->get_logger(), "bbox2d center: (%f, %f), size: (%f, %f)",
-                    position_x, position_y, bbox_size_x, bbox_size_y);
+        float bbox_size_x = bbox2d.bbox.size_x;
+        float bbox_size_y = bbox2d.bbox.size_y;
 
         bbox3d.bbox.center.position.x = (position_x - this->cx_) * depth_m / this->fx_;
         bbox3d.bbox.center.position.y = (position_y - this->cy_) * depth_m / this->fy_;
@@ -81,6 +94,30 @@ void BBox2DTo3DNode::callback(const sensor_msgs::msg::Image::ConstSharedPtr & de
                     bbox3d.bbox.size.x, bbox3d.bbox.size.y, bbox3d.bbox.size.z);
 
         bbox3d_msg.detections.push_back(bbox3d);
+
+        // draw circle
+        // empty, skip
+        if (!color.empty())
+        {
+            cv::circle(color, cv::Point(position_x, position_y), 5, cv::Scalar(0, 0, 255), -1);
+            // show distance
+            std::stringstream ss;
+            ss << depth_m << "m";
+            cv::putText(color, ss.str(), cv::Point(position_x, position_y), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 0, 255), 2);
+
+            // draw bbox
+            int left = position_x - (bbox_size_x / 2);
+            int top = position_y - (bbox_size_y / 2);
+            int right = position_x + (bbox_size_x / 2);
+            int bottom = position_y + (bbox_size_y / 2);
+            cv::rectangle(color, cv::Point(left, top), cv::Point(right, bottom), cv::Scalar(0, 255, 0), 2);
+        }
+    }
+
+    if (!color.empty())
+    {
+        cv::imshow("color", color);
+        cv::waitKey(1);
     }
 
     this->bbox3d_pub_->publish(bbox3d_msg);

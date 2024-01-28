@@ -48,9 +48,11 @@ namespace bbox2d_to_3d_node
         message_filters::Subscriber<Detection2DArray> bbox2d_sub_;
 
         rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr camera_info_sub_;
+        rclcpp::Subscription<Image>::SharedPtr color_sub_;
         rclcpp::Publisher<vision_msgs::msg::Detection3DArray>::SharedPtr bbox3d_pub_;
 
         cv::Mat1f depth_;
+        cv::Mat3b color_;
 
         float fx_;
         float fy_;
@@ -59,5 +61,6 @@ namespace bbox2d_to_3d_node
 
         void callback(const Image::ConstSharedPtr &, const Detection2DArray::ConstSharedPtr &);
         void cameraInfoCallback(const sensor_msgs::msg::CameraInfo::ConstSharedPtr &);
+        void colorCallback(const Image::ConstSharedPtr &);
     };
 }
