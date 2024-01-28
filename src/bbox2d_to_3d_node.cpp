@@ -119,26 +119,22 @@ void BBox2DTo3DNode::callback(const sensor_msgs::msg::Image::ConstSharedPtr & de
 
         if (!color.empty() && this->imshow_isshow_)
         {
+            int left = position_x - (bbox_size_x / 2);
+            int top = position_y - (bbox_size_y / 2);
+            int right = position_x + (bbox_size_x / 2);
+            int bottom = position_y + (bbox_size_y / 2);
+
+            for (int y = top; y < bottom; y++)
+                for (int x = left; x < right; x++)
+                    color.at<cv::Vec3b>(y, x) = depth2hue(cv_ptr->image.at<uint16_t>(y, x) / 1000.0);
+
             cv::circle(color, cv::Point(position_x, position_y), 5, cv::Scalar(0, 0, 255), -1);
             std::stringstream ss;
             ss << depth_m << "m";
             cv::putText(color, ss.str(), cv::Point(position_x, position_y), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 0, 255), 2);
 
-            // draw bbox
-            int left = position_x - (bbox_size_x / 2);
-            int top = position_y - (bbox_size_y / 2);
-            int right = position_x + (bbox_size_x / 2);
-            int bottom = position_y + (bbox_size_y / 2);
-            cv::rectangle(color, cv::Point(left, top), cv::Point(right, bottom), cv::Scalar(0, 255, 0), 2);
 
-            for (int y = top; y < bottom; y++)
-            {
-                for (int x = left; x < right; x++)
-                {
-                    float depth_m = cv_ptr->image.at<uint16_t>(y, x) / 1000.0;
-                    color.at<cv::Vec3b>(y, x) = depth2hue(depth_m);
-                }
-            }
+            cv::rectangle(color, cv::Point(left, top), cv::Point(right, bottom), cv::Scalar(0, 255, 0), 2);
 
         }
     }
