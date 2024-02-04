@@ -12,7 +12,6 @@
   <depend>cv_bridge</depend>
   <depend>libopencv-dev</depend>
   <depend>message_filters</depend>
-  <depend>opencv</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>sensor_msgs</depend>
