@@ -21,6 +21,10 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
+#include <tf2/utils.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/transform_broadcaster.h>
 #include <vision_msgs/msg/detection2_d.hpp>
 #include <vision_msgs/msg/detection2_d_array.hpp>
 #include <vision_msgs/msg/bounding_box2_d.hpp>
@@ -54,6 +58,11 @@ namespace bbox2d_to_3d_node
         cv::Mat1f depth_;
         cv::Mat3b color_;
 
+        tf2_ros::Buffer tf_buffer_;
+        tf2_ros::TransformListener tf_listener_;
+
+        std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+
         float fx_;
         float fy_;
         float cx_;
@@ -62,6 +71,8 @@ namespace bbox2d_to_3d_node
         float min_depth_;
         float max_depth_;
         bool imshow_isshow_;
+        bool broadcast_tf_;
+        std::string base_frame_id_;
 
         void callback(const Image::ConstSharedPtr &, const Detection2DArray::ConstSharedPtr &);
         void cameraInfoCallback(const sensor_msgs::msg::CameraInfo::ConstSharedPtr &);

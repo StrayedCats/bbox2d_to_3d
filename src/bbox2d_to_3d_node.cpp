@@ -18,15 +18,21 @@ namespace bbox2d_to_3d_node {
 
 BBox2DTo3DNode::BBox2DTo3DNode(const rclcpp::NodeOptions & options)
 : rclcpp::Node("bbox2d_to_3d_node", options),
-    sync_(10)
+    sync_(10),
+    tf_buffer_(this->get_clock()),
+    tf_listener_(tf_buffer_)
 {
+    this->declare_parameter("base_frame_id", "camera_link");
     this->declare_parameter("min_depth", 0.05);
     this->declare_parameter("max_depth", 3.0);
     this->declare_parameter("imshow_isshow", true);
+    this->declare_parameter("broadcast_tf", true);
 
+    this->get_parameter("base_frame_id", this->base_frame_id_);
     this->get_parameter("min_depth", this->min_depth_);
     this->get_parameter("max_depth", this->max_depth_);
     this->get_parameter("imshow_isshow", this->imshow_isshow_);
+    this->get_parameter("broadcast_tf", this->broadcast_tf_);
 
 
     this->camera_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
@@ -45,6 +51,8 @@ BBox2DTo3DNode::BBox2DTo3DNode(const rclcpp::NodeOptions & options)
                 return;
             }
         });
+
+    this->tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
 
     this->depth_sub_.subscribe(this, "depth", rmw_qos_profile_sensor_data);
     this->bbox2d_sub_.subscribe(this, "bbox2d", rmw_qos_profile_sensor_data);
@@ -97,6 +105,10 @@ void BBox2DTo3DNode::callback(const sensor_msgs::msg::Image::ConstSharedPtr & de
         {
             RCLCPP_WARN(this->get_logger(), "depth is nan");
             continue;
+        } else if (depth_m < this->min_depth_ || depth_m > this->max_depth_)
+        {
+            RCLCPP_WARN(this->get_logger(), "depth is out of range: %f", depth_m);
+            continue;
         }
 
         vision_msgs::msg::Detection3D bbox3d;
@@ -116,6 +128,22 @@ void BBox2DTo3DNode::callback(const sensor_msgs::msg::Image::ConstSharedPtr & de
         bbox3d.bbox.size.z = 0.0;
 
         bbox3d_msg.detections.push_back(bbox3d);
+
+        if (this->broadcast_tf_)
+        {
+            geometry_msgs::msg::TransformStamped transform;
+            transform.header.stamp = depth_msg->header.stamp;
+            transform.header.frame_id = this->base_frame_id_;
+            transform.child_frame_id = bbox2d.results[0].hypothesis.class_id;
+            transform.transform.translation.x = bbox3d.bbox.center.position.x;
+            transform.transform.translation.y = bbox3d.bbox.center.position.y;
+            transform.transform.translation.z = bbox3d.bbox.center.position.z;
+            transform.transform.rotation.x = 0;
+            transform.transform.rotation.y = 0;
+            transform.transform.rotation.z = 0;
+            transform.transform.rotation.w = 1;
+            this->tf_broadcaster_->sendTransform(transform);
+        }
 
         if (!color.empty() && this->imshow_isshow_)
         {
