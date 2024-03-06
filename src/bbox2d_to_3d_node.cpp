@@ -121,11 +121,11 @@ void BBox2DTo3DNode::callback(const sensor_msgs::msg::Image::ConstSharedPtr & de
         float bbox_size_y = bbox2d.bbox.size_y;
 
         bbox3d.bbox.center.position.x = (position_x - this->cx_) * depth_m / this->fx_;
-        bbox3d.bbox.center.position.y = (position_y - this->cy_) * depth_m / this->fy_;
-        bbox3d.bbox.center.position.z = depth_m;
+        bbox3d.bbox.center.position.y = depth_m;
+        bbox3d.bbox.center.position.z = (position_y - this->cy_) * depth_m / this->fy_;
         bbox3d.bbox.size.x = bbox_size_x * depth_m / this->fy_;
-        bbox3d.bbox.size.y = bbox_size_y * depth_m / this->fy_;
-        bbox3d.bbox.size.z = 0.0;
+        bbox3d.bbox.size.y = 0.0;
+        bbox3d.bbox.size.z = bbox_size_y * depth_m / this->fy_;
 
         bbox3d_msg.detections.push_back(bbox3d);
 
@@ -134,7 +134,7 @@ void BBox2DTo3DNode::callback(const sensor_msgs::msg::Image::ConstSharedPtr & de
             geometry_msgs::msg::TransformStamped transform;
             transform.header.stamp = depth_msg->header.stamp;
             transform.header.frame_id = this->base_frame_id_;
-            transform.child_frame_id = bbox2d.results[0].hypothesis.class_id;
+            transform.child_frame_id = bbox2d.id;
             transform.transform.translation.x = bbox3d.bbox.center.position.x;
             transform.transform.translation.y = bbox3d.bbox.center.position.y;
             transform.transform.translation.z = bbox3d.bbox.center.position.z;
