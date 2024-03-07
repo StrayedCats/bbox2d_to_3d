@@ -82,6 +82,8 @@ cv::Vec3b BBox2DTo3DNode::depth2hue(float depth)
 void BBox2DTo3DNode::callback(const sensor_msgs::msg::Image::ConstSharedPtr & depth_msg,
                               const vision_msgs::msg::Detection2DArray::ConstSharedPtr & bbox2d_msg)
 {
+    // get time
+    auto time = this->get_clock()->now();
     cv_bridge::CvImagePtr cv_ptr;
     try
     {
@@ -174,6 +176,9 @@ void BBox2DTo3DNode::callback(const sensor_msgs::msg::Image::ConstSharedPtr & de
     }
 
     this->bbox3d_pub_->publish(bbox3d_msg);
+
+    auto end = this->get_clock()->now();
+    RCLCPP_INFO(this->get_logger(), "callback: %f ms", (end - time).seconds() * 1000);
 }
 
 void BBox2DTo3DNode::cameraInfoCallback(const sensor_msgs::msg::CameraInfo::ConstSharedPtr & camera_info_msg)
