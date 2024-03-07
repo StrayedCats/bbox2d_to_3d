@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <bbox2d_to_3d_node/bbox2d_to_3d_node.hpp>
+#include <bbox2d_to_3d_node/bbox2d_to_3d_sync_node.hpp>
 
 namespace bbox2d_to_3d_node {
 
-BBox2DTo3DNode::BBox2DTo3DNode(const rclcpp::NodeOptions & options)
+BBox2DTo3DSyncNode::BBox2DTo3DSyncNode(const rclcpp::NodeOptions & options)
 : rclcpp::Node("bbox2d_to_3d_node", options),
     sync_(10),
     tf_buffer_(this->get_clock()),
@@ -36,7 +36,7 @@ BBox2DTo3DNode::BBox2DTo3DNode(const rclcpp::NodeOptions & options)
 
 
     this->camera_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
-        "camera_info", 1, std::bind(&BBox2DTo3DNode::cameraInfoCallback, this, std::placeholders::_1));
+        "camera_info", 1, std::bind(&BBox2DTo3DSyncNode::cameraInfoCallback, this, std::placeholders::_1));
 
     this->color_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
         "color", 1, [this](const sensor_msgs::msg::Image::ConstSharedPtr & color_msg) {
@@ -57,11 +57,11 @@ BBox2DTo3DNode::BBox2DTo3DNode(const rclcpp::NodeOptions & options)
     this->depth_sub_.subscribe(this, "depth", rmw_qos_profile_sensor_data);
     this->bbox2d_sub_.subscribe(this, "bbox2d", rmw_qos_profile_sensor_data);
     this->sync_.connectInput(this->depth_sub_, this->bbox2d_sub_);
-    this->sync_.registerCallback(&BBox2DTo3DNode::callback, this);
+    this->sync_.registerCallback(&BBox2DTo3DSyncNode::callback, this);
     this->bbox3d_pub_ = this->create_publisher<vision_msgs::msg::Detection3DArray>("bbox3d", 1);
 }
 
-cv::Vec3b BBox2DTo3DNode::depth2hue(float depth)
+cv::Vec3b BBox2DTo3DSyncNode::depth2hue(float depth)
 {
     if (depth < this->min_depth_)
     {
@@ -79,7 +79,7 @@ cv::Vec3b BBox2DTo3DNode::depth2hue(float depth)
     return bgr.at<cv::Vec3b>(0, 0);
 }
 
-void BBox2DTo3DNode::callback(const sensor_msgs::msg::Image::ConstSharedPtr & depth_msg,
+void BBox2DTo3DSyncNode::callback(const sensor_msgs::msg::Image::ConstSharedPtr & depth_msg,
                               const vision_msgs::msg::Detection2DArray::ConstSharedPtr & bbox2d_msg)
 {
     // get time
@@ -181,7 +181,7 @@ void BBox2DTo3DNode::callback(const sensor_msgs::msg::Image::ConstSharedPtr & de
     RCLCPP_INFO(this->get_logger(), "callback: %f ms", (end - time).seconds() * 1000);
 }
 
-void BBox2DTo3DNode::cameraInfoCallback(const sensor_msgs::msg::CameraInfo::ConstSharedPtr & camera_info_msg)
+void BBox2DTo3DSyncNode::cameraInfoCallback(const sensor_msgs::msg::CameraInfo::ConstSharedPtr & camera_info_msg)
 {
     this->camera_info_sub_.reset();
     this->fx_ = camera_info_msg->k[0];
@@ -196,4 +196,4 @@ void BBox2DTo3DNode::cameraInfoCallback(const sensor_msgs::msg::CameraInfo::Cons
 } // namespace bbox2d_to_3d_node
 
 #include <rclcpp_components/register_node_macro.hpp>
-RCLCPP_COMPONENTS_REGISTER_NODE(bbox2d_to_3d_node::BBox2DTo3DNode)
+RCLCPP_COMPONENTS_REGISTER_NODE(bbox2d_to_3d_node::BBox2DTo3DSyncNode)

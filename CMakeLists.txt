@@ -9,15 +9,29 @@ find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 find_package(OpenCV REQUIRED)
 
-ament_auto_add_library(${PROJECT_NAME} SHARED
-  src/bbox2d_to_3d_node.cpp
+# bbox2d_to_3d_sync --
+set(TARGET bbox2d_to_3d_sync)
+ament_auto_add_library(${TARGET} SHARED
+  src/${TARGET}_node.cpp
 )
-ament_target_dependencies(${PROJECT_NAME} OpenCV)
+ament_target_dependencies(${TARGET} OpenCV)
 
 rclcpp_components_register_node(
-  ${PROJECT_NAME}
-  PLUGIN "${PROJECT_NAME}::BBox2DTo3DNode"
-  EXECUTABLE ${PROJECT_NAME}_exec)
+  ${TARGET}
+  PLUGIN "${PROJECT_NAME}::BBox2DTo3DSyncNode"
+  EXECUTABLE ${TARGET}_node_exec)
+
+# bbox2d_to_3d_quick --
+set(TARGET bbox2d_to_3d_quick)
+ament_auto_add_library(${TARGET} SHARED
+  src/${TARGET}_node.cpp
+)
+ament_target_dependencies(${TARGET} OpenCV)
+
+rclcpp_components_register_node(
+  ${TARGET}
+  PLUGIN "${PROJECT_NAME}::BBox2DTo3DQuickNode"
+  EXECUTABLE ${TARGET}_node_exec)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
