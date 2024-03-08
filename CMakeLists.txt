@@ -33,6 +33,19 @@ rclcpp_components_register_node(
   PLUGIN "${PROJECT_NAME}::BBox2DTo3DQuickNode"
   EXECUTABLE ${TARGET}_node_exec)
 
+# bbox2d_to_3d_node::AddFakeDepthNode
+set(TARGET add_fake_depth)
+ament_auto_add_library(${TARGET} SHARED
+  src/${TARGET}_node.cpp
+)
+ament_target_dependencies(${TARGET} OpenCV)
+
+rclcpp_components_register_node(
+  ${TARGET}
+  PLUGIN "${PROJECT_NAME}::AddFakeDepthNode"
+  EXECUTABLE ${TARGET}_node_exec)
+
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   set(ament_cmake_copyright_FOUND TRUE)
