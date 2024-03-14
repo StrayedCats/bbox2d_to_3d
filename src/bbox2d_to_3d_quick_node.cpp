@@ -149,13 +149,14 @@ void BBox2DTo3DQuickNode::depthCallback(const sensor_msgs::msg::Image::ConstShar
             transform.header.stamp = depth_msg->header.stamp;
             transform.header.frame_id = this->base_frame_id_;
             transform.child_frame_id = bbox2d.id;
-            transform.transform.translation.x = bbox3d.bbox.center.position.x;
-            transform.transform.translation.y = bbox3d.bbox.center.position.y;
+            transform.transform.translation.x = bbox3d.bbox.center.position.y;
+            transform.transform.translation.y = -bbox3d.bbox.center.position.x;
             transform.transform.translation.z = bbox3d.bbox.center.position.z;
+
             transform.transform.rotation.x = 0;
             transform.transform.rotation.y = 0;
-            transform.transform.rotation.z = 0;
-            transform.transform.rotation.w = 1;
+            transform.transform.rotation.z = -0.7071068;
+            transform.transform.rotation.w = 0.7071068;
             this->tf_broadcaster_->sendTransform(transform);
         }
 
