@@ -19,9 +19,6 @@ class Plotter(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-    def offset_callback(self, x, y, offset, scale=50):
-        return (int(x * scale + offset[0]), int(y * scale + offset[1]))
-
     def get_frame(self, root_frame, target_frame, flip=False) -> tf2_ros.TransformStamped:
         try:
             if (flip):
