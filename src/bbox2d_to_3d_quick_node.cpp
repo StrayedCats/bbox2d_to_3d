@@ -117,11 +117,11 @@ void BBox2DTo3DQuickNode::depthCallback(const sensor_msgs::msg::Image::ConstShar
         float depth_m = depth_mm / 1000.0;
         if (std::isnan(depth_mm))
         {
-            RCLCPP_WARN(this->get_logger(), "depth is nan");
+            RCLCPP_DEBUG(this->get_logger(), "depth is nan");
             continue;
         } else if (depth_m < this->min_depth_ || depth_m > this->max_depth_)
         {
-            RCLCPP_WARN(this->get_logger(), "depth is out of range: %f", depth_m);
+            RCLCPP_DEBUG(this->get_logger(), "depth is out of range: %f", depth_m);
             continue;
         }
 
@@ -191,7 +191,6 @@ void BBox2DTo3DQuickNode::depthCallback(const sensor_msgs::msg::Image::ConstShar
     this->bbox3d_pub_->publish(bbox3d_msg);
 
     auto end = this->get_clock()->now();
-    RCLCPP_INFO(this->get_logger(), "callback: %f ms", (end - time).seconds() * 1000);
 }
 
 void BBox2DTo3DQuickNode::cameraInfoCallback(const sensor_msgs::msg::CameraInfo::ConstSharedPtr & camera_info_msg)
