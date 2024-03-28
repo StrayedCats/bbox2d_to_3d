@@ -28,6 +28,7 @@
 #include <vision_msgs/msg/bounding_box3_d.hpp>
 #include <vision_msgs/msg/detection3_d.hpp>
 #include <vision_msgs/msg/detection3_d_array.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
 
 #include <opencv2/opencv.hpp>
 
@@ -47,6 +48,7 @@ namespace bbox2d_to_3d_node
         rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr camera_info_sub_;
         rclcpp::Subscription<Image>::SharedPtr color_sub_;
         rclcpp::Publisher<vision_msgs::msg::Detection3DArray>::SharedPtr bbox3d_pub_;
+        rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_pub_;
 
         cv::Mat1f depth_;
         cv::Mat3b color_;

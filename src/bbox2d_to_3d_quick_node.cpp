@@ -26,7 +26,7 @@ BBox2DTo3DQuickNode::BBox2DTo3DQuickNode(const rclcpp::NodeOptions & options)
     this->declare_parameter("min_depth", 0.05);
     this->declare_parameter("max_depth", 3.0);
     this->declare_parameter("imshow_isshow", true);
-    this->declare_parameter("broadcast_tf", true);
+    this->declare_parameter("broadcast_tf", false);
 
     this->get_parameter("base_frame_id", this->base_frame_id_);
     this->get_parameter("min_depth", this->min_depth_);
@@ -60,6 +60,7 @@ BBox2DTo3DQuickNode::BBox2DTo3DQuickNode(const rclcpp::NodeOptions & options)
         "bbox2d", 1, std::bind(&BBox2DTo3DQuickNode::bbox2dCallback, this, std::placeholders::_1));
 
     this->bbox3d_pub_ = this->create_publisher<vision_msgs::msg::Detection3DArray>("bbox3d", 1);
+    this->marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("markers", 1);
 }
 
 cv::Vec3b BBox2DTo3DQuickNode::depth2hue(float depth)
@@ -109,7 +110,11 @@ void BBox2DTo3DQuickNode::depthCallback(const sensor_msgs::msg::Image::ConstShar
     cv::Mat3b color = this->color_.clone();
 
     vision_msgs::msg::Detection3DArray bbox3d_msg;
+    visualization_msgs::msg::MarkerArray marker_array;
     bbox3d_msg.header = depth_msg->header;
+    bbox3d_msg.header.frame_id = this->base_frame_id_;
+
+    marker_array.markers.clear();
     // for (auto bbox2d : bbox2d_msg->detections)
     for (auto bbox2d : this->bbox2d_msg_->detections)
     {
@@ -127,6 +132,7 @@ void BBox2DTo3DQuickNode::depthCallback(const sensor_msgs::msg::Image::ConstShar
 
         vision_msgs::msg::Detection3D bbox3d;
         bbox3d.header = depth_msg->header;
+        bbox3d.header.frame_id = this->base_frame_id_;
         bbox3d.results = bbox2d.results;
 
         float position_x = bbox2d.bbox.center.position.x;
@@ -134,14 +140,38 @@ void BBox2DTo3DQuickNode::depthCallback(const sensor_msgs::msg::Image::ConstShar
         float bbox_size_x = bbox2d.bbox.size_x;
         float bbox_size_y = bbox2d.bbox.size_y;
 
-        bbox3d.bbox.center.position.x = (position_x - this->cx_) * depth_m / this->fx_;
-        bbox3d.bbox.center.position.y = depth_m;
-        bbox3d.bbox.center.position.z = (position_y - this->cy_) * depth_m / this->fy_;
-        bbox3d.bbox.size.x = bbox_size_x * depth_m / this->fy_;
-        bbox3d.bbox.size.y = 0.0;
-        bbox3d.bbox.size.z = bbox_size_y * depth_m / this->fy_;
+        bbox3d.bbox.center.position.x = depth_m;
+        bbox3d.bbox.center.position.y = -(position_x - this->cx_) * depth_m / this->fx_;
+        bbox3d.bbox.center.position.z = -(position_y - this->cy_) * depth_m / this->fy_;
+        bbox3d.bbox.size.x = bbox_size_y * depth_m / this->fy_;
+        bbox3d.bbox.size.z = bbox_size_x * depth_m / this->fy_;
+        bbox3d.bbox.size.y = bbox3d.bbox.size.z;
 
         bbox3d_msg.detections.push_back(bbox3d);
+
+        // marker
+        visualization_msgs::msg::Marker marker;
+        marker.header = depth_msg->header;
+        marker.header.frame_id = this->base_frame_id_;
+        marker.ns = "bbox3d";
+        marker.id = std::stoi(bbox2d.id);
+        marker.type = visualization_msgs::msg::Marker::CUBE;
+        marker.action = visualization_msgs::msg::Marker::ADD;
+        marker.pose.position.x = bbox3d.bbox.center.position.x;
+        marker.pose.position.y = bbox3d.bbox.center.position.y;
+        marker.pose.position.z = bbox3d.bbox.center.position.z;
+        marker.pose.orientation.x = 0;
+        marker.pose.orientation.y = 0;
+        marker.pose.orientation.z = 0;
+        marker.pose.orientation.w = 1;
+        marker.scale.x = bbox3d.bbox.size.x;
+        marker.scale.y = bbox3d.bbox.size.y;
+        marker.scale.z = bbox3d.bbox.size.z;
+        marker.color.r = 0.0;
+        marker.color.g = 0.0;
+        marker.color.b = 1.0;
+        marker.color.a = 0.5;
+        marker_array.markers.push_back(marker);
 
         if (this->broadcast_tf_)
         {
@@ -187,6 +217,10 @@ void BBox2DTo3DQuickNode::depthCallback(const sensor_msgs::msg::Image::ConstShar
         cv::waitKey(1);
     }
 
+    if (!marker_array.markers.empty())
+    {
+        this->marker_pub_->publish(marker_array);
+    }
     this->bbox3d_pub_->publish(bbox3d_msg);
 
     auto end = this->get_clock()->now();
