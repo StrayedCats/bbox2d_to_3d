@@ -25,13 +25,13 @@ BBox2DTo3DQuickNode::BBox2DTo3DQuickNode(const rclcpp::NodeOptions & options)
     this->declare_parameter("base_frame_id", "camera_link");
     this->declare_parameter("min_depth", 0.05);
     this->declare_parameter("max_depth", 3.0);
-    this->declare_parameter("imshow_isshow", true);
+    this->declare_parameter("debug", true);
     this->declare_parameter("broadcast_tf", false);
 
     this->get_parameter("base_frame_id", this->base_frame_id_);
     this->get_parameter("min_depth", this->min_depth_);
     this->get_parameter("max_depth", this->max_depth_);
-    this->get_parameter("imshow_isshow", this->imshow_isshow_);
+    this->get_parameter("debug", this->imshow_isshow_);
     this->get_parameter("broadcast_tf", this->broadcast_tf_);
 
 
